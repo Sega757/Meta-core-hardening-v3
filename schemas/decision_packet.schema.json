@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sega757/meta-core/schemas/decision_packet.schema.json",
+  "title": "META-CORE Decision Packet",
+  "description": "Single proposed action. Emitted by the Reasoning Plane with lejdas_attestation and capability_token null; both are filled in by the Control Plane. A capability_token may only exist together with an L0 attestation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "packet_id",
+    "parent_state_version",
+    "provenance",
+    "tool_call",
+    "lejdas_attestation",
+    "capability_token"
+  ],
+  "properties": {
+    "packet_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Idempotency key for the whole execution path."
+    },
+    "parent_state_version": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "state_ledger.state_version the agent observed while planning (Perceive)."
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance",
+      "description": "Origin of the instruction. Packets from the agent channel must carry SYNTHETIC_AGENT; the trusted side enforces this, it is not a claim to be believed."
+    },
+    "tool_call": { "$ref": "#/$defs/tool_call" },
+    "justification": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "lejdas_attestation": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/lejdas_attestation" }]
+    },
+    "capability_token": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "string",
+          "pattern": "^v1\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]{43}$"
+        }
+      ]
+    }
+  },
+  "if": {
+    "properties": { "capability_token": { "type": "string" } },
+    "required": ["capability_token"]
+  },
+  "then": {
+    "properties": {
+      "lejdas_attestation": {
+        "type": "object",
+        "properties": { "escalation_level": { "const": "L0" } },
+        "required": ["escalation_level"]
+      }
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "enum": ["ORGANIC_USER", "SYNTHETIC_AGENT", "VERIFIED_EXTERNAL"]
+    },
+    "check_result": {
+      "enum": ["PASS", "FAIL", "NOT_EVALUATED"]
+    },
+    "tool_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_name", "args"],
+      "properties": {
+        "tool_name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{0,63}$"
+        },
+        "args": { "type": "object" }
+      }
+    },
+    "lejdas_attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "legal",
+        "ethical",
+        "jurisdictional",
+        "duty",
+        "accountability",
+        "safety",
+        "escalation_level",
+        "validator_version",
+        "evaluated_at_ms"
+      ],
+      "properties": {
+        "legal": { "$ref": "#/$defs/check_result" },
+        "ethical": { "$ref": "#/$defs/check_result" },
+        "jurisdictional": { "$ref": "#/$defs/check_result" },
+        "duty": { "$ref": "#/$defs/check_result" },
+        "accountability": { "$ref": "#/$defs/check_result" },
+        "safety": { "$ref": "#/$defs/check_result" },
+        "escalation_level": { "enum": ["L0", "L1", "L2", "L3"] },
+        "validator_version": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "evaluated_at_ms": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

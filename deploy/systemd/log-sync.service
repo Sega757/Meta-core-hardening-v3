@@ -1,0 +1,12 @@
+[Unit]
+Description=META-CORE telemetry batch git sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Adjust path + user to your install
+User=metacore
+WorkingDirectory=/opt/meta-core
+ExecStartPre=/usr/bin/env bash /opt/meta-core/telemetry/rotate.sh
+ExecStart=/usr/bin/env bash /opt/meta-core/telemetry/log_sync.sh

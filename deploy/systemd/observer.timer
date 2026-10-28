@@ -1,0 +1,9 @@
+[Unit]
+Description=Run META-CORE observer every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=1min
+
+[Install]
+WantedBy=timers.target

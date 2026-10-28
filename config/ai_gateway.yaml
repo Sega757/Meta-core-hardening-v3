@@ -1,0 +1,68 @@
+# AI Gateway / egress-proxy manifest (ADR-0009, ADR-0012).
+#
+# This is META-CORE's own declarative manifest, validated by `python3 -m src.config`.
+# It is NOT a LiteLLM config file: translating it into the settings of the gateway
+# product you deploy (and checking that the product honours them) is a separate
+# step that this repository does not do. Until that is checked, the cache and budget
+# rules below are declared, not proven to be enforced on the wire.
+#
+# Restricted YAML subset (no anchors, no multi-line scalars, lists of scalars only);
+# the validator rejects anything else.
+version: 1
+
+egress:
+  # Fail closed: anything not listed is denied.
+  default_action: deny
+  # Replace with the approved provider host(s). Wildcards are rejected.
+  allowed_hosts:
+    - llm-provider.example
+  tls_required: true
+
+routes:
+  # Think/Act calls: they produce or influence a Decision Packet.
+  reasoning-decision:
+    description: calls that produce or influence a Decision Packet
+    produces_decision_packet: true
+    tools_in_scope: true
+    # ADR-0012: a semantic cache can replay a packet computed for another state.
+    semantic_cache:
+      enabled: false
+    # Off by default (low hit rate: state changes on every commit). If ever enabled it
+    # must be the state-bound exact cache.
+    exact_cache:
+      enabled: false
+      key: state_bound
+      key_fields: [model_id, system_prompt_hash, state_root, canonical_prompt_payload]
+    # Starting values, not calibrated.
+    limits:
+      max_input_tokens: 16000
+      max_output_tokens: 2048
+      max_request_budget_tokens: 18048
+    timeouts_s:
+      connect: 3
+      read: 45
+      total: 60
+    max_retries: 0
+
+  # Read-only lookups in static public documentation, no tools, no path to mutation.
+  reference-docs:
+    description: read-only lookups in static public documentation
+    produces_decision_packet: false
+    tools_in_scope: false
+    semantic_cache:
+      enabled: true
+      similarity_threshold: 0.95
+      ttl_s: 86400
+    exact_cache:
+      enabled: false
+      key: state_bound
+      key_fields: [model_id, system_prompt_hash, state_root, canonical_prompt_payload]
+    limits:
+      max_input_tokens: 8000
+      max_output_tokens: 1024
+      max_request_budget_tokens: 9024
+    timeouts_s:
+      connect: 3
+      read: 30
+      total: 45
+    max_retries: 1

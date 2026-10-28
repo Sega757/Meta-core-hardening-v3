@@ -1,0 +1,12 @@
+[Unit]
+Description=META-CORE observer health check (exit 2 = CRITICAL)
+
+[Service]
+Type=oneshot
+User=metacore
+WorkingDirectory=/opt/meta-core
+EnvironmentFile=-/opt/meta-core/.env
+ExecStart=/usr/bin/python3 /opt/meta-core/telemetry/observer.py
+# Hook your kill switch here, e.g.:
+# OnFailure=metacore-killswitch.service
+SuccessExitStatus=0 1

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Sega757/meta-core/schemas/event_bus_payload.v1.json",
+  "title": "EventBusPayload",
+  "type": "object",
+  "properties": {
+    "schema": { "type": "string", "const": "1.0" },
+    "event_id": { "type": "string", "format": "uuid" },
+    "core_id": { "type": "string", "minLength": 1 },
+    "event": {
+      "type": "string",
+      "enum": ["CORE_STARTED", "CORE_STOPPED", "HEARTBEAT", "STEP_STARTED", "STEP_COMPLETED",
+               "STEP_FAILED", "SPAWN_REQUESTED", "SPAWN_COMPLETED", "FATAL_ERROR"]
+    },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "trace_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+    "span_id": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+    "parent_span_id": { "type": ["string", "null"], "pattern": "^[0-9a-f]{16}$" },
+    "source_system": { "type": "string" },
+    "execution_step": { "type": "string" },
+    "data": { "type": "object" },
+    "context_diff": { "type": "object" },
+    "guardrail_state": { "type": "object" },
+    "metrics": { "type": "object" }
+  },
+  "required": ["schema", "event_id", "core_id", "event", "timestamp"],
+  "allOf": [
+    {
+      "if": { "properties": { "event": { "enum": ["STEP_STARTED", "STEP_COMPLETED", "STEP_FAILED", "SPAWN_REQUESTED", "SPAWN_COMPLETED"] } } },
+      "then": { "required": ["trace_id", "span_id"] }
+    }
+  ]
+}
